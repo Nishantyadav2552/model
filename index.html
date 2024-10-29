@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bird Detection</title>
+</head>
+<body>
+    <h1>Bird Detection</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+    <img id="output" width="640" height="480">
+    
+    <!-- Add an audio element for the beep sound -->
+    <audio id="beep" src="beep.mp3" preload="auto"></audio>
+
+    <script>
+        async function startVideo() {
+            const video = document.getElementById('video');
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+        }
+
+        async function processFrame() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const output = document.getElementById('output');
+            const context = canvas.getContext('2d');
+            const beep = document.getElementById('beep');  // Get the beep sound element
+
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const frame = canvas.toDataURL('image/jpeg');
+            const base64Image = frame.split(',')[1];
+
+            const response = await fetch('http://127.0.0.1:5000/detect', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ image: base64Image })
+            });
+
+            const result = await response.json();
+            output.src = 'data:image/jpeg;base64,' + result.image;
+
+            // Check if a bird was detected
+            if (result.bird_detected) {
+                beep.play();  // Play the beep sound
+
+                // Stop the beep after 50 milliseconds
+                setTimeout(() => {
+                    beep.pause();  // Pause the beep sound
+                    beep.currentTime = 0;  // Reset the beep to the start
+                }, 100);
+            }
+        }
+
+        startVideo();
+
+        setInterval(processFrame, 1000);  // Process a frame every second
+    </script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bird Detection Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+            transition: background-color 0.5s; /* Smooth transition for color change */
+        }
+        .container {
+            position: relative;
+            width: 300px; /* Adjust the width as needed */
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            z-index: 1; /* Ensure content is above the video */
+        }
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background */
+            z-index: -1; /* Place behind the content */
+        }
+        video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -2; /* Place behind the container */
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 1.2rem;
+            margin: 5px 0;
+        }
+        .status {
+            font-size: 1.5rem;
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+
+<video autoplay muted loop>
+    <source src="D:/Bird_detection/bird.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+
+<div class="container">
+    <h1>Bird Detection Status</h1>
+    <p>Bird Detected: <span id="bird-status" class="status">Fetching...</span></p>
+    <p>Number of Birds Detected: <span id="bird-count" class="status">Fetching...</span></p>
+</div>
+
+<script>
+    // ThingSpeak API settings
+    const THINGSPEAK_API_URL = 'https://api.thingspeak.com/channels/2694014/feeds.json?results=1&api_key=4KBZZG9B6OO8W7XJ';
+
+    // Function to fetch data from ThingSpeak
+    function fetchData() {
+        fetch(THINGSPEAK_API_URL)
+            .then(response => response.json())
+            .then(data => {
+                const latestFeed = data.feeds[0];
+                const birdDetected = latestFeed.field1 === "1" ? "Yes" : "No";
+                const birdCount = parseInt(latestFeed.field2, 10); // Ensure birdCount is an integer
+
+                // Update HTML content
+                document.getElementById('bird-status').textContent = birdDetected;
+                document.getElementById('bird-count').textContent = birdCount;
+
+                // Change background color if more than 10 birds are detected
+                if (birdCount > 10) {
+                    document.body.style.backgroundColor = 'red';
+                } else {
+                    document.body.style.backgroundColor = '#f4f4f4'; // Default background color
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching data from ThingSpeak:', error);
+                document.getElementById('bird-status').textContent = 'Error';
+                document.getElementById('bird-count').textContent = 'Error';
+            });
+    }
+
+    // Fetch data every 10 seconds
+    setInterval(fetchData, 10000);
+    // Fetch data on initial load
+    
+    fetchData();
+</script>
+
+</body>
+</html>
